@@ -1,9 +1,12 @@
-.PHONY: all build check clippy fmt fmt-check clean run help
+.PHONY: all build check clippy fmt fmt-check clean run deploy install help
 
+# ── Config ────────────────────────────────────────────────────────────────────
 PACKAGE   := cambridge-dictionary-scraper
 BIN_NAME  := cam
 CARGO     := cargo
+INSTALL_DIR := $(HOME)/.local/bin
 
+# ── Debug flag (default: y) ───────────────────────────────────────────────────
 debug     ?= y
 
 ifeq ($(debug), y)
@@ -16,12 +19,15 @@ else
   BUILD_MODE  := release
 endif
 
+# ── Default ───────────────────────────────────────────────────────────────────
 all: build
 
+# ── Build ─────────────────────────────────────────────────────────────────────
 build:
 	@echo "› Building ($(BUILD_MODE))…"
 	$(CARGO) build --package $(PACKAGE) $(BUILD_FLAGS)
 
+# ── Quality ───────────────────────────────────────────────────────────────────
 check:
 	$(CARGO) check --package $(PACKAGE)
 
@@ -34,9 +40,22 @@ format:
 format-check:
 	$(CARGO) fmt --package $(PACKAGE) -- --check
 
+# ── Run ───────────────────────────────────────────────────────────────────────
 run: build
 	@echo "› Running ($(BUILD_MODE))…"
 	./$(BIN)
+
+# ── Deploy & Install ──────────────────────────────────────────────────────────
+deploy:
+	@echo "› Building release…"
+	$(CARGO) build --package $(PACKAGE) --release
+
+install: deploy
+	@echo "› Installing $(BIN_NAME) to $(INSTALL_DIR)…"
+	@mkdir -p $(INSTALL_DIR)
+	cp target/release/$(BIN_NAME) $(INSTALL_DIR)/$(BIN_NAME)
+	@echo "✓ Installed to $(INSTALL_DIR)/$(BIN_NAME)"
+	@echo "  Make sure $(INSTALL_DIR) is in your PATH"
 
 # ── Clean ─────────────────────────────────────────────────────────────────────
 clean:
@@ -52,20 +71,9 @@ help:
 	@echo "  build          Build the package"
 	@echo "  check          Fast type-check (no codegen)"
 	@echo "  clippy         Lint with Clippy (warnings as errors)"
-	@echo "  fmt            Auto-format with rustfmt"
-	@echo "  fmt-check      Check formatting without modifying files"
-	@echo "  test           Run tests"
-	@echo "  test-verbose   Run tests with stdout"
+	@echo "  format         Auto-format with rustfmt"
+	@echo "  format-check   Check formatting without modifying files"
 	@echo "  run            Build and run"
-	@echo "  clean          Remove build artefacts"debug ?= y
-
-ifeq ($(debug), y)
-  BUILD_FLAGS :=
-  BIN := target/debug/$(PACKAGE)
-else
-  BUILD_FLAGS := --release
-  BIN := target/release/$(PACKAGE)
-endif
-
-
-
+	@echo "  deploy         Build optimised release binary"
+	@echo "  install        Deploy + copy binary to $(INSTALL_DIR)"
+	@echo "  clean          Remove build artefacts"
